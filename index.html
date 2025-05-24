@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .api-status {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .api-status h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .api-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .api-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .api-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .api-info {
+            color: white;
+        }
+
+        .api-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .api-url {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .status-online {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-offline {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .logs-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logs-section h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        .control-group select::placeholder,
+        .control-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .logs-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .log-error {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: #f44336;
+            color: #ffcdd2;
+        }
+
+        .log-warning {
+            background: rgba(255, 152, 0, 0.1);
+            border-color: #ff9800;
+            color: #ffe0b2;
+        }
+
+        .log-info {
+            background: rgba(33, 150, 243, 0.1);
+            border-color: #2196f3;
+            color: #bbdefb;
+        }
+
+        .log-timestamp {
+            color: #90a4ae;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .log-controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                align-self: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 API Monitoring Dashboard</h1>
+            <p>Monitor de estado de APIs y análisis de logs en tiempo real</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalApis">12</div>
+                <div class="stat-label">APIs Monitoreadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="onlineApis">9</div>
+                <div class="stat-label">APIs Online</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="responseTime">245ms</div>
+                <div class="stat-label">Tiempo Respuesta Promedio</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="errorRate">2.1%</div>
+                <div class="stat-label">Tasa de Error</div>
+            </div>
+        </div>
+
+        <div class="api-status">
+            <h2>📊 Estado de APIs</h2>
+            <div class="api-list" id="apiList">
+                <!-- Las APIs se cargarán dinámicamente -->
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <h2>📝 Análisis de Logs</h2>
+            <div class="log-controls">
+                <div class="control-group">
+                    <label>Filtrar por nivel:</label>
+                    <select id="logLevel">
+                        <option value="all">Todos</option>
+                        <option value="error">Error</option>
+                        <option value="warning">Warning</option>
+                        <option value="info">Info</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Buscar:</label>
+                    <input type="text" id="searchTerm" placeholder="Buscar en logs...">
+                </div>
+                <button class="btn btn-primary" onclick="refreshLogs()">🔄 Actualizar Logs</button>
+            </div>
+            <div class="logs-container" id="logsContainer">
+                <!-- Los logs se cargarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de APIs simuladas
+        const apis = [
+            { name: 'User Authentication API', url: '/api/v1/auth', status: 'online', responseTime: 120 },
+            { name: 'Course Management API', url: '/api/v1/courses', status: 'online', responseTime: 89 },
+            { name: 'Student Data API', url: '/api/v1/students', status: 'warning', responseTime: 450 },
+            { name: 'Grade Book API', url: '/api/v1/grades', status: 'online', responseTime: 156 },
+            { name: 'Content Delivery API', url: '/api/v1/content', status: 'offline', responseTime: 0 },
+            { name: 'Notification Service', url: '/api/v1/notifications', status: 'online', responseTime: 234 },
+            { name: 'Analytics API', url: '/api/v1/analytics', status: 'online', responseTime: 345 },
+            { name: 'File Upload API', url: '/api/v1/upload', status: 'warning', responseTime: 678 },
+            { name: 'Integration Hub', url: '/api/v1/integrations', status: 'online', responseTime: 123 },
+            { name: 'Backup Service', url: '/api/v1/backup', status: 'offline', responseTime: 0 },
+            { name: 'Health Check API', url: '/api/v1/health', status: 'online', responseTime: 45 },
+            { name: 'Report Generator', url: '/api/v1/reports', status: 'online', responseTime: 567 }
+        ];
+
+        // Logs simulados
+        let logs = [];
+
+        // Generar logs iniciales
+        function generateLogs() {
+            const logTypes = ['error', 'warning', 'info'];
+            const messages = [
+                'Database connection timeout after 30 seconds',
+                'High memory usage detected: 85% of available RAM',
+                'User login attempt from new IP address',
+                'API rate limit exceeded for client ID: 12345',
+                'File upload completed successfully',
+                'Cache invalidation triggered for user sessions',
+                'SSL certificate expires in 7 days',
+                'Backup process completed successfully',
+                'Invalid authentication token provided',
+                'Course enrollment limit reached',
+                'Gradebook synchronization started',
+                'Third-party integration error: timeout',
+                'User session expired, redirecting to login',
+                'Database query optimization completed',
+                'New user registration processed'
+            ];
+
+            logs = [];
+            for (let i = 0; i < 50; i++) {
+                const type = logTypes[Math.floor(Math.random() * logTypes.length)];
+                const message = messages[Math.floor(Math.random() * messages.length)];
+                const timestamp = new Date(Date.now() - Math.random() * 86400000).toISOString();
+                
+                logs.push({
+                    type: type,
+                    message: message,
+                    timestamp: timestamp,
+                    api: apis[Math.floor(Math.random() * apis.length)].name
+                });
+            }
+            
+            // Ordenar por timestamp descendente
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+
+        // Renderizar lista de APIs
+        function renderApiList() {
+            const apiList = document.getElementById('apiList');
+            apiList.innerHTML = '';
+
+            apis.forEach(api => {
+                const apiItem = document.createElement('div');
+                apiItem.className = 'api-item';
+                
+                const statusClass = api.status === 'online' ? 'status-online' : 
+                                  api.status === 'warning' ? 'status-warning' : 'status-offline';
+                
+                const statusText = api.status === 'online' ? '✅ Online' : 
+                                 api.status === 'warning' ? '⚠️ Warning' : '❌ Offline';
+
+                apiItem.innerHTML = `
+                    <div class="api-info">
+                        <div class="api-name">${api.name}</div>
+                        <div class="api-url">${api.url} • ${api.responseTime}ms</div>
+                    </div>
+                    <div class="status-indicator ${statusClass}">${statusText}</div>
+                `;
+                
+                apiList.appendChild(apiItem);
+            });
+        }
+
+        // Renderizar logs
+        function renderLogs() {
+            const logsContainer = document.getElementById('logsContainer');
+            const levelFilter = document.getElementById('logLevel').value;
+            const searchTerm = document.getElementById('searchTerm').value.toLowerCase();
+            
+            let filteredLogs = logs;
+            
+            // Filtrar por nivel
+            if (levelFilter !== 'all') {
+                filteredLogs = filteredLogs.filter(log => log.type === levelFilter);
+            }
+            
+            // Filtrar por término de búsqueda
+            if (searchTerm) {
+                filteredLogs = filteredLogs.filter(log => 
+                    log.message.toLowerCase().includes(searchTerm) ||
+                    log.api.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            logsContainer.innerHTML = '';
+            
+            filteredLogs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${log.type}`;
+                
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                
+                logEntry.innerHTML = `
+                    <div class="log-timestamp">[${timestamp}] ${log.api}</div>
+                    <div>[${log.type.toUpperCase()}] ${log.message}</div>
+                `;
+                
+                logsContainer.appendChild(logEntry);
+            });
+        }
+
+        // Actualizar estadísticas
+        function updateStats() {
+            const onlineCount = apis.filter(api => api.status === 'online').length;
+            const avgResponseTime = Math.round(
+                apis.filter(api => api.status !== 'offline')
+                    .reduce((sum, api) => sum + api.responseTime, 0) / 
+                apis.filter(api => api.status !== 'offline').length
+            );
+            
+            const errorLogs = logs.filter(log => log.type === 'error').length;
+            const errorRate = ((errorLogs / logs.length) * 100).toFixed(1);
+            
+            document.getElementById('totalApis').textContent = apis.length;
+            document.getElementById('onlineApis').textContent = onlineCount;
+            document.getElementById('responseTime').textContent = avgResponseTime + 'ms';
+            document.getElementById('errorRate').textContent = errorRate + '%';
+        }
+
+        // Simular cambios en tiempo real
+        function simulateRealTimeUpdates() {
+            setInterval(() => {
+                // Cambiar estado de alguna API aleatoriamente
+                const randomApi = apis[Math.floor(Math.random() * apis.length)];
+                const statuses = ['online', 'warning', 'offline'];
+                randomApi.status = statuses[Math.floor(Math.random() * statuses.length)];
+                randomApi.responseTime = Math.floor(Math.random() * 1000) + 50;
+                
+                // Agregar nuevo log
+                const logTypes = ['error', 'warning', 'info'];
+                const messages = [
+                    'New error detected in system',
+                    'Performance warning triggered',
+                    'System status update completed',
+                    'User activity spike detected',
+                    'Maintenance window scheduled'
+                ];
+                
+                const newLog = {
+                    type: logTypes[Math.floor(Math.random() * logTypes.length)],
+                    message: messages[Math.floor(Math.random() * messages.length)],
+                    timestamp: new Date().toISOString(),
+                    api: randomApi.name
+                };
+                
+                logs.unshift(newLog);
+                if (logs.length > 100) {
+                    logs.pop();
+                }
+                
+                renderApiList();
+                renderLogs();
+                updateStats();
+            }, 5000);
+        }
+
+        // Función para refrescar logs
+        function refreshLogs() {
+            generateLogs();
+            renderLogs();
+            updateStats();
+        }
+
+        // Event listeners
+        document.getElementById('logLevel').addEventListener('change', renderLogs);
+        document.getElementById('searchTerm').addEventListener('input', renderLogs);
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            generateLogs();
+            renderApiList();
+            renderLogs();
+            updateStats();
+            simulateRealTimeUpdates();
+        });
+    </script>
+</body>
+</html>
